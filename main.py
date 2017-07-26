@@ -118,7 +118,7 @@ def build_repository(k, l, p):
     total = len(l)
 
     threads = []
-    max_threads = 16
+    max_threads = 128
     #for i in len(l):
     while (i < len(l)):
         e = l[i]
