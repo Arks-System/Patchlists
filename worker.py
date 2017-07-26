@@ -21,7 +21,14 @@ class DownloadWorker(threading.Thread):
         """
         self.callback = callback
         self.lst = lst
+        self._run = True
 
     def run(self):
         for e in self.lst:
-            self.callback(e.url, e.abs_path, e)
+            if (self._run):
+                self.callback(e.url, e.abs_path, e)
+            else:
+                break
+
+    def stop(self):
+        self._run = False

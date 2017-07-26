@@ -13,6 +13,7 @@ import time
 import queue
 import threading
 import requests
+import signal
 
 import utils
 import worker
@@ -24,6 +25,7 @@ BASEDIR = os.path.abspath(os.path.dirname(__file__))
 PATCHLISTS = {"MasterURL": "", "PatchURL": ""}
 
 Lock = threading.Lock()
+threads = []
 
 class PatchFile:
     def __init__(self, l):
@@ -40,6 +42,7 @@ class PatchFile:
         self.setbase(l[3])
         self.abs_path = utils.join_path(BASEDIR, l[0])
         self.abs_path = "%s/%s" % (os.path.abspath(PATCHLISTS[self.list].replace("http://download.pso2.jp/", "")), self.path)
+        self.old_path = utils.join_path("%s/%s" % (BASEDIR, "patch_prod/patches"), self.path)
 
     def setbase(self, f):
         self.location = f
@@ -98,16 +101,21 @@ def get_management():
                     lst["patchlist"] = build_list(get("%s/patchlist.txt" % (e[1])))
     return (lst)
 
-def sync_retrieve_files(url, path, patchfile):
+def is_up_to_date(f, p):
     """
-    print(url)
-    print(path)
-    print(patchfile)
+    print(p.old_path)
+    print(utils.hash_md5(p.old_path))
+    print(p.hash)
     sys.exit(1)
     """
-    #####
+    return ((os.path.exists(p.old_path) and utils.hash_md5(p.old_path) == p.hash) or (os.path.exists(f) and utils.hash_md5(f) == p.hash))
+
+def sync_retrieve_files(url, path, patchfile):
+    """
     if (os.path.exists(path) and utils.hash_md5(path) == patchfile.hash):
-        print("GET {%s}%s (%.3fMB) OK" % (patchfile.list.replace("URL", "Base"), patchfile.path, float(patchfile.size) / 1024 / 1024))
+    """
+    if (is_up_to_date(path, patchfile)):
+        print("CHK {%s}%s (%.3fMB) OK" % (patchfile.list.replace("URL", "Base"), patchfile.path, float(patchfile.size) / 1024 / 1024))
     else:
         with Lock:
             utils.create_path(os.path.dirname(path))
@@ -117,6 +125,39 @@ def sync_retrieve_files(url, path, patchfile):
         if (r.status_code < 400):
             with open(path, "wb+") as f:
                 f.write(r.content)
+
+def thread_pool(p):
+    lst = []
+
+    step = int(len(p) / max_threads) + 1
+    for i in range(0, len(p), step):
+        lst.append(p[i:i + step])
+
+    for i in range(max_threads):
+        work = worker.DownloadWorker(lst[i], sync_retrieve_files)
+        work.start()
+        threads.append(work)
+    signal.signal(signal.SIGINT, signal_handler)
+    for t in threads:
+        t.join()
+
+def publish_repository(path, patchfile):
+    for e in patchfile:
+        if (not os.path.exists(os.path.dirname(e.old_path))):
+            utils.create_path(os.path.dirname(e.old_path))
+        if (os.path.exists(e.abs_path)):
+            if (os.path.exists(e.old_path)):
+                os.unlink(e.old_path)
+            os.rename(e.abs_path, e.old_path)
+            print("Publishing %s" % (e.path))
+
+def signal_handler(signal, frame):
+    for t in threads:
+        if (t.is_alive()):
+            t.stop()
+            t.join()
+    print("Exiting...")
+    sys.exit(1)
 
 if (__name__ == "__main__"):
     print("Retrieving Management file")
@@ -129,42 +170,18 @@ if (__name__ == "__main__"):
                 print("Creating %s folder: %s" % (key, p))
             utils.dl("%spatchlist.txt" % (val), utils.join_path(p, "patchlist.txt"))
     print("Retrieving files")
-    total = len(manag["patchlist"])
-    current = 0
 
-    """Threading"""
-    threads = []
     max_threads = 4
+    thread_pool(manag["patchlist"])
 
-    #for i in range(0, len(manag["patchlist"]) / max_threads, max_threads):
-        #current += 1
-        #path = utils.join_path(PATCHLISTS[e.list].replace("http://download.pso2.jp", ""), e.path)
-    p = manag["patchlist"]
-    lst = []
+    old_patchlist = utils.join_path("%s/%s" % (BASEDIR, "patch_prod/patches"), "patchfile.txt")
 
-    step = int(len(p) / max_threads) + 1
-    for i in range(0, len(manag["patchlist"]), step):
-        lst.append(manag["patchlist"][i:i + step])
-        pass
+    utils.create_path(os.path.dirname(old_patchlist))
+    publish_repository(os.path.dirname(old_patchlist), manag["patchlist"])
 
-    for i in range(max_threads):
-        """Threading"""
-        #url = "%s%s" % (PATCHLISTS[e.list], e.path)
-        #path = "%s%s" % (BASEDIR, path)
+    with open(old_patchlist, "w+") as f:
+        for e in manag["patchlist"]:
+            print(e, end="\r\n", file=f)
 
-        #lst = utils.chunks(manag["patchlist"], int(len(p) / max_threads) + int(len(p) % max_threads))
-        """
-        if ((current - 1) % max_threads == 0 and current - 1 != 0):
-            for t in threads:
-                t.join()
-            threads = []
-        """
-        work = worker.DownloadWorker(lst[i], sync_retrieve_files)
-        work.start()
-        threads.append(work)
-    for t in threads:
-        t.join()
-        """
-        print("[%d/%d]" % (current, total), end=' ')
-        sync_retrieve_files("%s%s" % (PATCHLISTS[e.list], e.path), "%s%s" % (BASEDIR, path), e)
-        """
+    versionfile = os.path.join(os.path.dirname(old_patchlist), "version.ver")
+    utils.dl("http://download.pso2.jp/patch_prod/patches/version.ver", versionfile)
