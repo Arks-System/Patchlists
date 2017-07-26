@@ -12,12 +12,16 @@ import sys
 import threading
 
 class DownloadWorker(threading.Thread):
-    def __init__(self, url, path, patchfile, callback):
+    def __init__(self, lst, callback):
         threading.Thread.__init__(self)
+        """
         self.url = url
         self.path = path
         self.patchfile = patchfile
+        """
         self.callback = callback
+        self.lst = lst
 
     def run(self):
-        self.callback()
+        for e in self.lst:
+            self.callback(e.url, e.abs_path, e)

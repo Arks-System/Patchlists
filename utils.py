@@ -45,3 +45,7 @@ def get(url):
     if (r.status_code >= 400):
         return (None)
     return (r.text)
+
+def chunks(l, n):
+    for i in range(0, len(l), n):
+        yield (l[i:i + n])
