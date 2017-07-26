@@ -9,34 +9,18 @@
 
 import os
 import sys
+import time
+import queue
 import threading
 import requests
 
-import get_file
+import utils
 
 HEADERS = {"User-Agent": "AQUA_HTTP"}
 BASEURL = "http://patch01.pso2gs.net/patch_prod/patches/"
 MANAGEMENT = "management_beta.txt"
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 PATCHLISTS = {"MasterURL": "", "PatchURL": ""}
-
-class DownloadWorker(threading.Thread):
-    def __init__(self, url, path, patchlist, current, total):
-        threading.Thread.__init__(self)
-        self.url = url
-        self.path = path
-        self.patchlist = patchlist
-        self.current = current
-        self.total = total
-
-    def run(self):
-        r = requests.get(self.url, headers=HEADERS)
-        e = self.patchlist
-        if (r.status_code < 400):
-            #print("[%d/%d]" % (current, total), end=' ')
-            print("[%d/%d] GET %s (%s) (%.3fMb) %d" % (self.current, self.total, e.filename, e.location, float(e.size) / 1024 / 1024, r.status_code), end='\n')
-            with open(self.path, 'wb+') as f:
-                f.write(r.content)
 
 class PatchFile:
     def __init__(self, l):
@@ -84,10 +68,9 @@ def get_management():
     url = "%s%s" % (BASEURL, MANAGEMENT)
     lst = {}
 
-    print("GET %s" % (url))
     r = requests.get(url, headers=HEADERS)
+    print("GET %s (%d)" % (url, r.status_code))
     if (r.status_code < 400):
-        print("Status: %d" % (r.status_code))
         #print(r.text)
 
         path = os.path.join(BASEDIR, url.replace("http://patch01.pso2gs.net/", ""))
@@ -102,89 +85,41 @@ def get_management():
             if (len(e) > 1):
                 if (e[0] in ["MasterURL", "PatchURL"]):
                     PATCHLISTS[e[0]] = e[1]
+                    lst[e[0]] = e[1]
         for e in r.text.split('\n'):
             e = e.strip().split('=')
             if (len(e) > 1):
-                #print("%s: %s" % (e[0], e[1]))
-                if (e[0] in ["MasterURL", "PatchURL"]):
-                    lst[e[0]] = {"url": e[1]}
-                    lst[e[0]]["patchlist"] = build_list(get("%s/patchlist.txt" % (e[1])))
+                if (e[0] in ["PatchURL"]):
+                    lst["patchlist"] = build_list(get("%s/patchlist.txt" % (e[1])))
     return (lst)
 
-def build_repository(k, l, p):
-    print("%s: %s" %(k, path))
-    current = 0
-    i = 0
-    total = len(l)
-
-    threads = []
-    max_threads = 128
-    #for i in len(l):
-    while (i < len(l)):
-        e = l[i]
-        current += 1
-        if (k == "MasterURL"):
-            e.setbase("m")
-        if (e.list != k):
-            continue
-
-        abs_path = os.path.join(p, e.path)
-        abs_path = os.path.normpath(abs_path)
-        if (not os.path.exists(abs_path) or get_file.hash(abs_path) != e.hash):
-            if (not os.path.exists(os.path.dirname(abs_path))):
-                os.makedirs(os.path.dirname(abs_path))
-
-        if (i % max_threads == 0 and i != 0):
-            for t in threads:
-                t.join()
-            threads = []
-
-        worker = DownloadWorker(e.url, abs_path, e, i + 1, total)
-        worker.start()
-        threads.append(worker)
-
-        i += 1
-        """
-            #print(abs_path)
-            #print("[%d/%d]" % (current, total), end=' ')
-            #print("GET %s (%s) (%.3fMb)" % (e.filename, e.location, float(e.size) / 1024 / 1024), end=' ')
-
-            #print(PATCHLISTS[e.list])
-
-            r = requests.get(e.url, headers=HEADERS)
-            print("%d" % (r.status_code))
-            if (r.status_code < 400):
-                with open(abs_path, 'wb+') as f:
-                    f.write(r.content)
-            #print(" (%d)" % (r.status_code))
-        """
+def sync_retrieve_files(url, path, patchfile):
+    if (os.path.exists(path) and utils.hash_md5(path) == patchfile.hash):
+        print("GET {%s}%s (%.3fMB) OK" % (patchfile.list.replace("URL", "Base"), patchfile.path, float(patchfile.size) / 1024 / 1024))
+    else:
+        utils.create_path(os.path.dirname(path))
+        print("GET {%s}%s (%.3fMB)" % (patchfile.list.replace("URL", "Base"), patchfile.path, float(patchfile.size) / 1024 / 1024), end=' ')
+        r = requests.get(url, headers=HEADERS)
+        print("%d" % (r.status_code))
+        if (r.status_code < 400):
+            with open(path, "wb+") as f:
+                f.write(r.content)
 
 if (__name__ == "__main__"):
-    lst = get_management()
-
-    for key, val in lst.items():
-        url = "%spatchlist.txt" % (val['url'])
-        path = os.path.join(BASEDIR, val['url'].replace("http://download.pso2.jp/", ""))
-        path = os.path.normpath(path)
-        print(path)
-        if (not os.path.exists(path)):
-            os.makedirs(path)
-        with open("%s/patchlist.txt" % (path), 'wb+') as f:
-            print("GET %s" % (url))
-            r = requests.get(url, headers=HEADERS)
-            print(r.status_code)
-            f.write(r.content)
-        print("Building repository")
-        build_repository(key, val["patchlist"], path)
-
-
-
-"""
-TODO:
-
-1. Download MasterURL: http://download.pso2.jp/patch_prod/v41000_rc_85_masterbase/patches/patchlist.txt
-2. Download PatchURL: http://download.pso2.jp/patch_prod/v50001_rc_28_583F1C31/patches/patchlist.txt
-3. Create file list: Patch > Master
-4. Download files
-5. Publish files
-"""
+    print("Retrieving Management file")
+    manag = get_management()
+    for key, val in PATCHLISTS.items():
+        if (key in ["MasterURL", "PatchURL"]):
+            p = utils.join_path(BASEDIR, val.replace("http://download.pso2.jp/", ""))
+            if (not os.path.exists(p)):
+                utils.create_path(p)
+                print("Creating %s folder: %s" % (key, p))
+            utils.dl("%spatchlist.txt" % (val), utils.join_path(p, "patchlist.txt"))
+    print("Retrieving files")
+    total = len(manag["patchlist"])
+    current = 0
+    for e in manag["patchlist"]:
+        current += 1
+        path = utils.join_path(PATCHLISTS[e.list].replace("http://download.pso2.jp", ""), e.path)
+        print("[%d/%d]" % (current, total), end=' ')
+        sync_retrieve_files("%s%s" % (PATCHLISTS[e.list], e.path), "%s%s" % (BASEDIR, path), e)
