@@ -10,8 +10,10 @@
 import os
 import requests
 import hashlib
+import psutil
 
 HEADERS = {"User-Agent": "AQUA_HTTP"}
+LOCKFILE = "/tmp/patchlist.lock"
 
 def hash_md5(file):
     BLOCKS = 65536
@@ -49,3 +51,29 @@ def get(url):
 def chunks(l, n):
     for i in range(0, len(l), n):
         yield (l[i:i + n])
+
+def lock():
+    with open(LOCKFILE, "w+") as f:
+        f.write(str(os.getpid()))
+
+def unlock():
+    os.unlink(LOCKFILE)
+
+def is_locked():
+    if (os.path.exists(LOCKFILE)):
+        pid = 0
+        with open(LOCKFILE, "r") as f:
+            pid = int(f.read())
+        if (pid in psutil.pids()):
+            return (True)
+        else:
+            unlock()
+    return (False)
+    """
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return (False)
+    else:
+        return (True)
+    """

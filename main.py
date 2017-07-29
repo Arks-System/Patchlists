@@ -15,6 +15,8 @@ import threading
 import requests
 import signal
 
+import shutil
+
 import utils
 import worker
 
@@ -52,6 +54,10 @@ class PatchFile:
         elif (self.location == 'p'):
             self.url = "%s%s" % (PATCHLISTS["PatchURL"], self.path)
             self.list = "PatchURL"
+
+    def get_oldlisting(self):
+        s = "%s\t%d\t%s\t%s" % (self.path, self.size, self.hash, self.flags)
+        return (s)
 
     def __repr__(self):
         s = "%s\t%s\t%d\t%s" % (self.path, self.hash, self.size, self.flags)
@@ -148,7 +154,8 @@ def publish_repository(path, patchfile):
         if (os.path.exists(e.abs_path)):
             if (os.path.exists(e.old_path)):
                 os.unlink(e.old_path)
-            os.rename(e.abs_path, e.old_path)
+            #os.rename(e.abs_path, e.old_path)
+            shutil.copy(e.abs_path, e.old_path)
             print("Publishing %s" % (e.path))
 
 def signal_handler(signal, frame):
@@ -160,6 +167,9 @@ def signal_handler(signal, frame):
     sys.exit(1)
 
 if (__name__ == "__main__"):
+    if (utils.is_locked()):
+        print("Application already running", file=sys.stderr)
+    utils.lock()
     print("Retrieving Management file")
     manag = get_management()
     for key, val in PATCHLISTS.items():
@@ -179,9 +189,11 @@ if (__name__ == "__main__"):
     utils.create_path(os.path.dirname(old_patchlist))
     publish_repository(os.path.dirname(old_patchlist), manag["patchlist"])
 
+    print("Writing patchfile.txt")
     with open(old_patchlist, "w+") as f:
         for e in manag["patchlist"]:
-            print(e, end="\r\n", file=f)
+            print(e.get_oldlisting(), end="\r\n", file=f)
 
     versionfile = os.path.join(os.path.dirname(old_patchlist), "version.ver")
-    utils.dl("http://download.pso2.jp/patch_prod/patches/version.ver", versionfile)
+    utils.dl("%s/version.ver" % (manag['PatchURL']), versionfile)
+    utils.unlock()
