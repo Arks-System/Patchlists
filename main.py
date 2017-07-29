@@ -196,4 +196,6 @@ if (__name__ == "__main__"):
 
     versionfile = os.path.join(os.path.dirname(old_patchlist), "version.ver")
     utils.dl("%s/version.ver" % (manag['PatchURL']), versionfile)
+    with open(versionfile, "r") as f:
+        print(f.read())
     utils.unlock()
