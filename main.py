@@ -183,16 +183,17 @@ if (__name__ == "__main__"):
 
     max_threads = 4
     thread_pool(manag["patchlist"])
-
+    
+    """
     old_patchlist = utils.join_path("%s/%s" % (BASEDIR, "patch_prod/patches"), "patchfile.txt")
 
     utils.create_path(os.path.dirname(old_patchlist))
     publish_repository(os.path.dirname(old_patchlist), manag["patchlist"])
-
+    """
     print("Writing patchfile.txt")
     with open(old_patchlist, "w+") as f:
         for e in manag["patchlist"]:
-            print(e.get_oldlisting(), end="\r\n", file=f)
+            print(e, end="\r\n", file=f)
 
     versionfile = os.path.join(os.path.dirname(old_patchlist), "version.ver")
     utils.dl("%s/version.ver" % (manag['PatchURL']), versionfile)
