@@ -167,6 +167,7 @@ def signal_handler(signal, frame):
     sys.exit(1)
 
 if (__name__ == "__main__"):
+    lsts = ["patchlist.txt", "launcherlist.txt", "patchlist_always.txt"]
     if (utils.is_locked()):
         print("Application already running", file=sys.stderr)
     utils.lock()
@@ -178,7 +179,9 @@ if (__name__ == "__main__"):
             if (not os.path.exists(p)):
                 utils.create_path(p)
                 print("Creating %s folder: %s" % (key, p))
-            utils.dl("%spatchlist.txt" % (val), utils.join_path(p, "patchlist.txt"))
+            for e in lsts:
+                if (utils.dl("%s%s" % (val, e), utils.join_path(p, e)) < 400):
+                    print(" GET %s" % (e))
     print("Retrieving files")
 
     max_threads = 4
@@ -189,14 +192,21 @@ if (__name__ == "__main__"):
 
     utils.create_path(os.path.dirname(old_patchlist))
     publish_repository(os.path.dirname(old_patchlist), manag["patchlist"])
-    """
     print("Writing patchfile.txt")
     with open(old_patchlist, "w+") as f:
         for e in manag["patchlist"]:
             print(e, end="\r\n", file=f)
+    """
 
-    versionfile = os.path.join(os.path.dirname(old_patchlist), "version.ver")
-    utils.dl("%s/version.ver" % (manag['PatchURL']), versionfile)
-    with open(versionfile, "r") as f:
-        print(f.read())
+    #versionfile = os.path.join(os.path.dirname(old_patchlist), "version.ver")
+    for e in [manag["PatchURL"], manag["MasterURL"], "http://download.pso2.jp/patch_prod/patches/"]:
+        versionfile = os.path.join(os.path.dirname("%s%s" % (BASEDIR, e.replace("http://download.pso2.jp", ""))), "version.ver")
+        #print(versionfile)
+        #print(utils.get("%s/version.ver" % (e)))
+        if (utils.dl("%s/version.ver" % (e), versionfile) < 400):
+            with open(versionfile, "r") as f:
+                print("%sversion.ver: %s" %(e.replace("http://download.pso2.jp/patch_prod/", ""), f.read()))
+        if (utils.dl("%s/gameversion.ver.pat" % (e), versionfile) < 400):
+            with open(versionfile, "r") as f:
+                print("%sgameversion.ver.pat: %s" %(e.replace("http://download.pso2.jp/patch_prod/", ""), f.read()))
     utils.unlock()

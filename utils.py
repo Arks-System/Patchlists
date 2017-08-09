@@ -39,11 +39,11 @@ def dl(url, path):
     if (r.status_code < 400):
         with open(path, "wb+") as f:
             f.write(r.content)
-        print("GET %s (%d)" % (url, r.status_code))
     return (r.status_code)
 
 def get(url):
     r = requests.get(url, headers=HEADERS)
+    print("GET %s (%d)" % (url, r.status_code))
     if (r.status_code >= 400):
         return (None)
     return (r.text)
