@@ -1,6 +1,8 @@
 PSO2 Patchlists
 ===============
 
+`PatchBase` will now refer to the `PatchURL` repository, `MasterBase` will now refer to the `MasterURL` repository.  
+
 Management file: `http://patch01.pso2gs.net/patch_prod/patches/management_beta.txt`
 
 cUrl: `curl --User-Agent AQUA_HTTP http://patch01.pso2gs.net/patch_prod/patches/management_beta.txt`
@@ -18,12 +20,20 @@ cUrl: `curl --User-Agent AQUA_HTTP http://patch01.pso2gs.net/patch_prod/patches/
 	RetryNum=10
 	IsPGO=1
 	MasterURL=http://download.pso2.jp/patch_prod/v41000_rc_85_masterbase/patches/
-	PatchURL=http://download.pso2.jp/patch_prod/v50001_rc_28_583F1C31/patches/
+	PatchURL=http://download.pso2.jp/patch_prod/v50000_rc_101_416B9870/patches/
 
-The important list is `PatchURL`, located in: `http://download.pso2.jp/patch_prod/v50001_rc_28_583F1C31/patches/patchlist.txt`
+The important list is `PatchURL`, located in: `http://download.pso2.jp/patch_prod/v50001_rc_28_583F1C31/patches/patchlist.txt`  
+That list is the one that seems to be used to updated the game since it checks and downloads from the `MasterURL` and `PatchURL`.
+
+The official launcher seems to deny updates and filechecking when `IsInMaintenance` is set to `1`.
+
+Another `management_beta.txt` file exist at `http://download.pso2.jp/patch_prod/patches/management_beta.txt` but it isn't used since the version don't match.
+
 
 Patchlist format
 ================
+
+The right list to use is the `PatchBase`'s `patchfile.txt`.
 
 	pso2.exe.pat	13AAAA5783BD0A5F9EFAF2E953CCFA33	29510176	p	g
 	PSO2JP.ini.pat	A46C50855C94D122D238F220EFBC1B10	1345	p	g
@@ -36,6 +46,18 @@ Patchlist format
 
 Format is:
 
-	<path> <md5 hash> <size bytes> <master|patch> <uknown flag>
+	<path> <md5 hash> <size bytes> <master|patch> <unknown flag>
 
-The MasterBase is defined by `MasterUrl` and it seems USELESS. The `PatchURL` seems to contain everything needed.
+The `unknown flag` might be use for gradual download. As usual remove the `.pat` extension when downloading.
+
+Version files
+=============
+
+Using the `PatchBase` we can retrieve the current version of the game in the files `version.ver` and `gameversion.ver.pat`. These files don't seem to exist in the `MasterBase`.
+
+	$> curl --User-Agent AQUA_HTTP http://download.pso2.jp/patch_prod/v50000_rc_101_416B9870/patches/version.ver
+	v50000_rc_101
+	$> curl --User-Agent AQUA_HTTP http://download.pso2.jp/patch_prod/v50000_rc_101_416B9870/patches/gameversion.ver.pat
+	5.0001.2
+
+Both version files are used.
