@@ -25,6 +25,7 @@ BASEURL = "http://patch01.pso2gs.net/patch_prod/patches/"
 MANAGEMENT = "management_beta.txt"
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 PATCHLISTS = {"MasterURL": "", "PatchURL": ""}
+MIRROR_URL = b"https://patch.arks-system.eu/"
 
 Lock = threading.Lock()
 threads = []
@@ -92,7 +93,13 @@ def get_management():
         if (not os.path.exists(path)):
             os.makedirs(os.path.dirname(path))
         with open(path, "wb+") as f:
-            f.write(r.content)
+            data = r.content
+            try:
+                data = data.replace(b"http://download.pso2.jp/", MIRROR_URL)
+                print("  %s will be used as 'MIRROR_URI'" % (MIRROR_URL))
+            except NameError as e:
+                print("  http://download.pso2.jp/ will be used as 'MIRROR_URL'")
+            f.write(data)
 
         for e in r.text.split('\n'):
             e = e.strip().split('=')
@@ -201,12 +208,13 @@ if (__name__ == "__main__"):
     #versionfile = os.path.join(os.path.dirname(old_patchlist), "version.ver")
     for e in [manag["PatchURL"], manag["MasterURL"], "http://download.pso2.jp/patch_prod/patches/"]:
         versionfile = os.path.join(os.path.dirname("%s%s" % (BASEDIR, e.replace("http://download.pso2.jp", ""))), "version.ver")
+        gameversionfile = os.path.join(os.path.dirname("%s%s" % (BASEDIR, e.replace("http://download.pso2.jp", ""))), "version.ver")
         #print(versionfile)
         #print(utils.get("%s/version.ver" % (e)))
         if (utils.dl("%s/version.ver" % (e), versionfile) < 400):
             with open(versionfile, "r") as f:
                 print("%sversion.ver: %s" %(e.replace("http://download.pso2.jp/patch_prod/", ""), f.read()))
-        if (utils.dl("%s/gameversion.ver.pat" % (e), versionfile) < 400):
+        if (utils.dl("%s/gameversion.ver.pat" % (e), gameversionfile) < 400):
             with open(versionfile, "r") as f:
                 print("%sgameversion.ver.pat: %s" %(e.replace("http://download.pso2.jp/patch_prod/", ""), f.read()))
     utils.unlock()
