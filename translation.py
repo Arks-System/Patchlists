@@ -9,6 +9,7 @@ import utils
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 WORKING = "%s/patch_prod/translation/" % (BASEDIR)
 PATCHLIST = "%s/patchlist.txt" % (WORKING)
+VERSION_FILE = "%s/version.ver" % (WORKING)
 
 IGNORE = [
         "version.ver",
@@ -26,6 +27,14 @@ class Translationlist:
     def __repr__(self):
         s = "%s\t%s\t%d\t%s" % (self.path, self.hash, self.size, self.flags)
         return (s)
+
+def get_version_url():
+    management = "http://patch01.pso2gs.net/patch_prod/patches/management_beta.txt"
+    r = utils.get(management)
+    for e in r.split('\n'):
+        k, v = e.strip("\r").split('=')
+        if (k == "PatchURL"):
+            return ("%s/version.ver" % (v))
 
 if (__name__ == "__main__"):
     translist = []
@@ -47,3 +56,8 @@ if (__name__ == "__main__"):
     with open(PATCHLIST, "w+") as f:
         for p in translist:
             print(p, file=f)
+
+    version_url = get_version_url()
+    utils.dl(version_url, VERSION_FILE)
+    with open(VERSION_FILE, "r") as f:
+        print(f.read())
