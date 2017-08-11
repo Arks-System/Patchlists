@@ -6,24 +6,21 @@
 
 set -e
 
-VERSIONS_FILE="../versionpatcher.txt"
-PSO2_VERSION="$(pso2version | grep "SEGA" | cut -f 2)"
-TEMP_FOLDER="./temp"
+pushd `dirname $0` > /dev/null
+MAIN_PATH=`pwd -P`
+popd > /dev/null
+
+TEMP_FOLDER="${MAIN_PATH}/temp"
+OUTPUT_FOLDER="${MAIN_PATH}/patch_prod/translation/"
 PATCH_PAGE_URL="http://pso2.acf.me.uk/Manual/"
 PATCH_BASE_URL="https://pso2.acf.me.uk/Manual/index.php?file="
 
 PATCH_PAGE="$(curl -s "${PATCH_PAGE_URL}"| sed -r 's/<br ?\/?>/\n/gi')"
 
-ARCHIVE_FORMAT=(.zip .rar)
-
-pushd `dirname $0` > /dev/null
-MAIN_PATH=`pwd -P`
-popd > /dev/null
-
 cd ${MAIN_PATH}
-mkdir -p ${TEMP_FOLDER}
-cd ${TEMP_FOLDER}
-rm *.zip *.rar -f
+rm -rf "${OUTPUT_FOLDER}"
+mkdir -p "${OUTPUT_FOLDER}/data/win32"
+mkdir -p "${TEMP_FOLDER}"
 
 function most_recent() {
 	PATTERN="s/.* ([A-Za-z]+) ([0-9]+) ([0-9]+)( preliminary)? \($1\).*/\\2 \\1 \\3/i"
@@ -35,44 +32,10 @@ function most_recent() {
 	echo $p_archive
 }
 
-#min_patch="patch_$(most_recent "main")"
-#large_patch="$(most_recent "large files")_largefiles"
-
-#echo $min_patch $large_patch
-
-#for i in ${ARCHIVE_FORMAT[@]}; do
-#	echo $i
-#done
-
 function get_link() {
 	echo $PATCH_PAGE | sed -r "s/.*(<a href=\"?([^\">]+)\"?>$1<\/a>).*/\\2/i"
 }
 
-function isRar() {
-	##echo ${1##*.}
-	if [[ "${1##*.}" = "rar" ]]; then
-		return 0 
-	else
-		return 1
-	fi
-}
-
-function rarIt() {
-	ARCHIVE="${1%.*}"
-
-	mkdir -p "./${ARCHIVE}"
-	cd ${ARCHIVE}
-	unzip -o ../$1 -d ./
-	rar a "../${ARCHIVE}.rar" ./*
-	cd ..
-	rm "$ARCHIVE" -rf
-}
-
-function updateFile() {
-	isRar "$1" || rarIt "$1"
-	cp "${1%.*}.rar" "/home/www-data/arks-system.tool/patch/${2}" -v
-	chown :www-data "/home/www-data/arks-system.tool/patch/${2}" -v
-}
 
 if [ "$PATCH_PAGE" = "" ]; then
 	echo Retrying just once
@@ -80,20 +43,10 @@ if [ "$PATCH_PAGE" = "" ]; then
 fi
 
 PATCH_MINI="$(get_link "Click here to download the latest patch.")"
-#PATCH_LARG="$(get_link "Large files")"
 
-#wget --quiet $PATCH_MINI $PATCH_LARG
-echo "Mini:  $PATCH_MINI"
-#echo "Large: $PATCH_LARG"
-echo
-#wget $PATCH_MINI $PATCH_LARG || exit 1
-wget $PATCH_MINI || exit 1
+echo "Archive:  $PATCH_MINI"
+wget "${PATCH_MINI}" -O "${TEMP_FOLDER}/patch.zip" || exit 1
+echo $MAIN_PATH
+unzip "${TEMP_FOLDER}/patch.zip" -d "${OUTPUT_FOLDER}/data/win32/"
 
-updateFile "$(basename ${PATCH_MINI})" "P1.rar"
-#updateFile "$(basename ${PATCH_LARG})" "P2.rar"
-
-sed -r "s/DW=.*/DW=${PSO2_VERSION}/" -i "../${VERSIONS_FILE}"
-cat -e ../${VERSIONS_FILE}
-#truncate -s -1 ../${VERSIONS_FILE}
-
-perl -pi -e 'chomp if eof' ../${VERSIONS_FILE}
+./translation.py
