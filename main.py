@@ -96,7 +96,7 @@ def get_management():
             data = r.content
             try:
                 data = data.replace(b"http://download.pso2.jp/", MIRROR_URL.encode('us-ascii'))
-                print("  %s will be used as 'MIRROR_URI'" % (MIRROR_URL))
+                print("  %s will be used as 'MIRROR_URL'" % (MIRROR_URL))
             except NameError as e:
                 print("  http://download.pso2.jp/ will be used as 'MIRROR_URL'")
             f.write(data)
