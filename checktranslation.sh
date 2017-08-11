@@ -84,6 +84,6 @@ function update_available() {
 
 if [ "$(update_available $TODAY $PARSED_DATE $ARCHIVE_DATE)" = "1" ]; then
 	echo Update available
-	./update.sh
+	./update_translation.sh
 fi
 exit 1
