@@ -6,22 +6,22 @@
 
 set -e
 
+pushd `dirname $0` > /dev/null
+MAIN_PATH=`pwd -P`
+popd > /dev/null
+
+
 alias errcho='>&2 echo'
 
-VERSIONS_FILE="../versionpatcher.txt"
-#PSO2_VERSION="$(pso2version | grep "SEGA" | cut -f 2)"
+PATCHLIST="${MAIN_PATH}/patch_prod/translation/patchlist.txt"
+
 PATCH_PAGE_URL="http://pso2.acf.me.uk/Manual/"
 PATCH_BASE_URL="https://pso2.acf.me.uk/Manual/index.php?file="
 
 PATCH_PAGE="$(curl -s "${PATCH_PAGE_URL}"| sed -r 's/<br ?\/?>/\n/gi')"
 
-ARCHIVE_FORMAT=(.zip .rar)
-
 TODAY="$(date +"%Y_%m_%d")"
 
-pushd `dirname $0` > /dev/null
-MAIN_PATH=`pwd -P`
-popd > /dev/null
 
 cd ${MAIN_PATH}
 
@@ -52,11 +52,11 @@ echo "Patch date: $PARSED_DATE"
 echo "Today: $TODAY"
 
 ARCHIVE_DATE=""
-if [ -f "./P1.rar" ]; then
-	ARCHIVE_DATE="$(date -d"$(stat ./P1.rar |grep Modify|cut -d' ' -f2-)" +"%Y_%m_%d")"
-	echo "P1.rar: $ARCHIVE_DATE"
+if [ -f "${PATCHLIST}" ]; then
+	ARCHIVE_DATE="$(date -d"$(stat ${PATCHLIST} |grep Modify|cut -d' ' -f2-)" +"%Y_%m_%d")"
+	echo "${PATCHLIST}: $ARCHIVE_DATE"
 else
-	echo No P1 file, go ahead and install it
+	echo No patchlist.txt file, go ahead and install it
 fi
 
 function update_available() {
@@ -67,7 +67,7 @@ function update_available() {
 
 	#echo T:$T P:$P A:$A 
 	#>&2 echo $T $P $A 
-	if !([ -f "./P1.rar" ]); then
+	if !([ -f "${PATCHLIST}" ]); then
 		ret=1
 	elif [ $T -gt $P ] && [ $P -gt $A ]; then
 		ret=1

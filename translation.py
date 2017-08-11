@@ -22,7 +22,7 @@ class Translationlist:
         self.path = path.replace(WORKING, "")
         self.hash = utils.hash_md5(path)
         self.size = os.stat(path)[ST_SIZE]
-        self.flags = "p"
+        self.flags = "t"
 
     def __repr__(self):
         s = "%s\t%s\t%d\t%s" % (self.path, self.hash, self.size, self.flags)
