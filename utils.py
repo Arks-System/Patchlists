@@ -43,7 +43,7 @@ def dl(url, path):
 
 def get(url):
     r = requests.get(url, headers=HEADERS)
-    print("GET %s (%d)" % (url, r.status_code))
+    print("GET %s (%d)" % (url.replace("\r", ""), r.status_code))
     if (r.status_code >= 400):
         return (None)
     return (r.text)
