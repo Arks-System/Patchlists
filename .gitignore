@@ -162,3 +162,5 @@ ENV/
 # End of https://www.gitignore.io/api/pip,python
 tmp*
 temp*
+logs/
+*.log
