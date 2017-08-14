@@ -98,7 +98,7 @@ def get_management():
     print("GET %s (%d)" % (url, r.status_code))
     if (r.status_code < 400):
         #print(r.text)
-
+        """
         path = os.path.join(BASEDIR, url.replace("http://patch01.pso2gs.net/", ""))
         path = os.path.normpath(path)
         if (not os.path.exists(path)):
@@ -115,7 +115,7 @@ def get_management():
                 print("  http://download.pso2.jp/ will be used as 'MIRROR_URL'")
             print(data.decode("us-ascii"), end="")
             f.write(data)
-
+        """
         for e in r.text.split('\n'):
             e = e.strip().split('=')
             if (len(e) > 1):
@@ -130,6 +130,29 @@ def get_management():
                     lst["patchlist_always"] = build_list(get("%s/patchlist_always.txt" % (e[1])))
                     lst["launcherlist"] = build_list(get("%s/launcherlist.txt" % (e[1])))
     return (lst)
+
+def write_management():
+    url = "%s%s" % (BASEURL, MANAGEMENT)
+    path = os.path.join(BASEDIR, url.replace("http://patch01.pso2gs.net/", ""))
+    path = os.path.normpath(path)
+
+    if (not os.path.exists(path)):
+        os.makedirs(os.path.dirname(path))
+    r = requests.get(url, headers=HEADERS)
+    if (r.status_code >= 400):
+        raise Exception("Could not get management for writing")
+    with open(path, "wb+") as f:
+        data = r.content
+        try:
+            data = data.replace(b"http://download.pso2.jp/", MIRROR_URL.encode('us-ascii'))
+            print("  %s will be used as 'MIRROR_URL'" % (MIRROR_URL))
+            transurl = "TranslationURL=%spatch_prod/translation/\r\n" % (MIRROR_URL)
+            print("  Appending Translation URL: %s" % (transurl.replace("\r\n", "")))
+            data += transurl.encode('us-ascii')
+        except NameError as e:
+            print("  http://download.pso2.jp/ will be used as 'MIRROR_URL'")
+        print(data.decode("us-ascii"), end="")
+        f.write(data)
 
 def is_up_to_date(f, p):
     return ((os.path.exists(p.old_path) and utils.hash_md5(p.old_path) == p.hash) or (os.path.exists(f) and utils.hash_md5(f) == p.hash))
@@ -189,6 +212,7 @@ if (__name__ == "__main__"):
         print("Application already running", file=sys.stderr)
     utils.lock()
     print("Retrieving Management file")
+    
     manag = get_management()
     for key, val in PATCHLISTS.items():
         if (key in ["MasterURL", "PatchURL"]):
@@ -218,4 +242,7 @@ if (__name__ == "__main__"):
             with open(versionfile, "r") as f:
                 print("%sgameversion.ver.pat: %s" %(e.replace("http://download.pso2.jp/patch_prod/", ""), f.read().replace("\n", "")))
     
+    print("Writing management to disk")
+    write_management()
+    print("PSO2 can now be updated from this mirror")
     utils.unlock()
