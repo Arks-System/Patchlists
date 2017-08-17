@@ -60,4 +60,4 @@ Using the `PatchBase` we can retrieve the current version of the game in the fil
 	$> curl --User-Agent AQUA_HTTP http://download.pso2.jp/patch_prod/v50000_rc_101_416B9870/patches/gameversion.ver.pat
 	5.0001.2
 
-Both version files are used.
+Ìt seems only `gameversion.ver.pat` is now used.
