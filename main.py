@@ -98,24 +98,6 @@ def get_management():
     print("GET %s (%d)" % (url, r.status_code))
     if (r.status_code < 400):
         #print(r.text)
-        """
-        path = os.path.join(BASEDIR, url.replace("http://patch01.pso2gs.net/", ""))
-        path = os.path.normpath(path)
-        if (not os.path.exists(path)):
-            os.makedirs(os.path.dirname(path))
-        with open(path, "wb+") as f:
-            data = r.content
-            try:
-                data = data.replace(b"http://download.pso2.jp/", MIRROR_URL.encode('us-ascii'))
-                print("  %s will be used as 'MIRROR_URL'" % (MIRROR_URL))
-                transurl = "TranslationURL=%spatch_prod/translation/\r\n" % (MIRROR_URL)
-                print("  Appending Translation URL: %s" % (transurl.replace("\r\n", "")))
-                data += transurl.encode('us-ascii')
-            except NameError as e:
-                print("  http://download.pso2.jp/ will be used as 'MIRROR_URL'")
-            print(data.decode("us-ascii"), end="")
-            f.write(data)
-        """
         for e in r.text.split('\n'):
             e = e.strip().split('=')
             if (len(e) > 1):
