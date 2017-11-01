@@ -140,17 +140,17 @@ def is_up_to_date(f, p):
     return ((os.path.exists(p.old_path) and utils.hash_md5(p.old_path) == p.hash) or (os.path.exists(f) and utils.hash_md5(f) == p.hash))
 
 def sync_retrieve_files(url, path, patchfile):
-    if (is_up_to_date(path, patchfile)):
-        print("CHK {%s}%s (%.3fMB) OK" % (patchfile.list.replace("URL", "Base"), patchfile.path, float(patchfile.size) / 1024 / 1024))
-    else:
+    if (not is_up_to_date(path, patchfile)):
+        #print("CHK {%s}%s (%.3fMB) OK" % (patchfile.list.replace("URL", "Base"), patchfile.path, float(patchfile.size) / 1024 / 1024))
         with Lock:
             utils.create_path(os.path.dirname(path))
-
         r = requests.get(url, headers=HEADERS)
         print("GET {%s}%s (%.3fMB) %d" % (patchfile.list.replace("URL", "Base"), patchfile.path, float(patchfile.size) / 1024 / 1024, r.status_code))
         if (r.status_code < 400):
             with open(path, "wb+") as f:
                 f.write(r.content)
+    #else:
+        #print("CHK {%s}%s (%.3fMB) OK" % (patchfile.list.replace("URL", "Base"), patchfile.path, float(patchfile.size) / 1024 / 1024))
 
 def thread_pool(p):
     lst = []

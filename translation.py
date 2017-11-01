@@ -9,7 +9,7 @@ import utils
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 WORKING = "%s/patch_prod/translation/" % (BASEDIR)
 PATCHLIST = "%s/patchlist.txt" % (WORKING)
-VERSION_FILE = "%s/version.ver" % (WORKING)
+VERSION_FILE = "%s/gameversion.ver.pat" % (WORKING)
 
 IGNORE = [
         "version.ver",
@@ -34,7 +34,7 @@ def get_version_url():
     for e in r.split('\n'):
         k, v = e.strip("\r").split('=')
         if (k == "PatchURL"):
-            return ("%s/version.ver" % (v))
+            return ("%s/gameversion.ver.pat" % (v))
 
 if (__name__ == "__main__"):
     translist = []
