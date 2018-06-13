@@ -54,7 +54,7 @@ class PatchFile:
             self.flags = "\t".join(l[3:])
             self.setbase(l[3])
         self.abs_path = utils.join_path(BASEDIR, l[0])
-        self.abs_path = "%s/%s" % (os.path.abspath(PATCHLISTS[self.list].replace("http://download.pso2.jp/", "")), self.path)
+        self.abs_path = "%s/%s" % (os.path.abspath(PATCHLISTS[self.list].replace("http://aws-download.pso2.jp/", "")), self.path)
         self.old_path = utils.join_path("%s/%s" % (BASEDIR, "patch_prod/patches"), self.path)
 
     def setbase(self, f):
@@ -108,9 +108,9 @@ def get_management():
             e = e.strip().split('=')
             if (len(e) > 1):
                 if (e[0] in ["PatchURL"]):
-                    lst["patchlist"] = build_list(get("%s/patchlist.txt" % (e[1])))
-                    lst["patchlist_always"] = build_list(get("%s/patchlist_always.txt" % (e[1])))
-                    lst["launcherlist"] = build_list(get("%s/launcherlist.txt" % (e[1])))
+                    lst["patchlist"] = build_list(get("%spatchlist.txt" % (e[1])))
+                    lst["patchlist_always"] = build_list(get("%spatchlist_always.txt" % (e[1])))
+                    lst["launcherlist"] = build_list(get("%slauncherlist.txt" % (e[1])))
     return (lst)
 
 def write_management():
@@ -118,7 +118,8 @@ def write_management():
     path = os.path.join(BASEDIR, url.replace("http://patch01.pso2gs.net/", ""))
     path = os.path.normpath(path)
 
-    if (not os.path.exists(path)):
+    print(path)
+    if (not os.path.exists(os.path.dirname(path))):
         os.makedirs(os.path.dirname(path))
     r = requests.get(url, headers=HEADERS)
     if (r.status_code >= 400):
@@ -126,13 +127,13 @@ def write_management():
     with open(path, "wb+") as f:
         data = r.content
         try:
-            data = data.replace(b"http://download.pso2.jp/", MIRROR_URL.encode('us-ascii'))
+            data = data.replace(b"http://aws-download.pso2.jp/", MIRROR_URL.encode('us-ascii'))
             print("  %s will be used as 'MIRROR_URL'" % (MIRROR_URL))
             transurl = "TranslationURL=%spatch_prod/translation/\r\n" % (MIRROR_URL)
             print("  Appending Translation URL: %s" % (transurl.replace("\r\n", "")))
             data += transurl.encode('us-ascii')
         except NameError as e:
-            print("  http://download.pso2.jp/ will be used as 'MIRROR_URL'")
+            print("  http://aws-download.pso2.jp/ will be used as 'MIRROR_URL'")
         print(data.decode("us-ascii"), end="")
         f.write(data)
 
@@ -155,6 +156,8 @@ def sync_retrieve_files(url, path, patchfile):
 def thread_pool(p):
     lst = []
 
+    print(" > ", end="")
+    print(len(p))
     step = int(len(p) / max_threads) + 1
     for i in range(0, len(p), step):
         lst.append(p[i:i + step])
@@ -198,7 +201,7 @@ if (__name__ == "__main__"):
     manag = get_management()
     for key, val in PATCHLISTS.items():
         if (key in ["MasterURL", "PatchURL"]):
-            p = utils.join_path(BASEDIR, val.replace("http://download.pso2.jp/", ""))
+            p = utils.join_path(BASEDIR, val.replace("http://aws-download.pso2.jp/", ""))
             if (not os.path.exists(p)):
                 utils.create_path(p)
                 print("Creating %s folder: %s" % (key, p))
@@ -212,17 +215,17 @@ if (__name__ == "__main__"):
         if (not key in ["PatchURL", "TranslationURL", "MasterURL"]):
             print("Setting pool for %s" % (key))
             thread_pool(val)
-    
+
     print("\nRetrieving version")
-    for e in [manag["PatchURL"], manag["MasterURL"], "http://download.pso2.jp/patch_prod/patches/"]:
-        versionfile = os.path.join(os.path.dirname("%s%s" % (BASEDIR, e.replace("http://download.pso2.jp", ""))), "version.ver")
-        gameversionfile = os.path.join(os.path.dirname("%s%s" % (BASEDIR, e.replace("http://download.pso2.jp", ""))), "version.ver")
-        if (utils.dl("%s/version.ver" % (e), versionfile) < 400):
+    for e in [manag["PatchURL"], manag["MasterURL"], "http://aws-download.pso2.jp/patch_prod/patches/"]:
+        versionfile = os.path.join(os.path.dirname("%s%s" % (BASEDIR, e.replace("http://aws-download.pso2.jp", ""))), "version.ver")
+        gameversionfile = os.path.join(os.path.dirname("%s%s" % (BASEDIR, e.replace("http://aws-download.pso2.jp", ""))), "gameversion.ver.pat")
+        if (utils.dl("%sversion.ver" % (e), versionfile) < 400):
             with open(versionfile, "r") as f:
-                print("%sversion.ver: %s" %(e.replace("http://download.pso2.jp/patch_prod/", ""), f.read().replace("\n", "")))
-        if (utils.dl("%s/gameversion.ver.pat" % (e), gameversionfile) < 400):
+                print("%sversion.ver: %s" %(e.replace("http://aws-download.pso2.jp/patch_prod/", ""), f.read().replace("\n", "")))
+        if (utils.dl("%sgameversion.ver.pat" % (e), gameversionfile) < 400):
             with open(versionfile, "r") as f:
-                print("%sgameversion.ver.pat: %s" %(e.replace("http://download.pso2.jp/patch_prod/", ""), f.read().replace("\n", "")))
+                print("%sgameversion.ver.pat: %s" %(e.replace("http://aws-download.pso2.jp/patch_prod/", ""), f.read().replace("\n", "")))
     
     print("Writing management to disk")
     write_management()

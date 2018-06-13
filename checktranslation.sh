@@ -15,8 +15,8 @@ alias errcho='>&2 echo'
 
 PATCHLIST="${MAIN_PATH}/patch_prod/translation/patchlist.txt"
 
-PATCH_PAGE_URL="http://pso2.acf.me.uk/Manual/"
-PATCH_BASE_URL="https://pso2.acf.me.uk/Manual/index.php?file="
+PATCH_PAGE_URL="https://pso2.acf.me.uk/Manual/"
+#PATCH_BASE_URL="https://pso2.acf.me.uk/Manual/index.php?8613985ec49eb8f757ae6439e879bb2a="
 
 PATCH_PAGE="$(curl -s "${PATCH_PAGE_URL}"| sed -r 's/<br ?\/?>/\n/gi')"
 
@@ -30,34 +30,14 @@ function get_link() {
 }
 
 function parse_date_frompatch() {
-	D="$(echo $1 | sed -r 's/.*patch_([0-9]+)_([0-9]+)_([0-9]+)\.zip/\1\/\2\/\3/gi')"
+	D="$(echo $1 | sed -r 's/.+patch_([0-9]+)_([0-9]+)_([0-9]+)\..+/\1\/\2\/\3/gi')"
+	#D="$(echo $1 | sed -r 's/.*patch_([0-9]+)_([0-9]+)_([0-9]+)\.zip/\1\/\2\/\3/gi')"
 	date -d "$D"  +"%Y_%m_%d"
 }
 
 function date_scoreless() {
 	echo $1 | sed 's/_//g'
 }
-
-if [ "$PATCH_PAGE" = "" ]; then
-	echo Retrying just once
-	PATCH_PAGE="$(curl -s "${PATCH_PAGE_URL}"| sed -r 's/<br ?\/?>/\n/gi')"
-fi
-
-PATCH_MINI="$(get_link "Click here to download the latest patch.")"
-PARSED_DATE="$(parse_date_frompatch $PATCH_MINI)"
-
-
-echo "Mini:  $PATCH_MINI"
-echo "Patch date: $PARSED_DATE"
-echo "Today: $TODAY"
-
-ARCHIVE_DATE=""
-if [ -f "${PATCHLIST}" ]; then
-	ARCHIVE_DATE="$(date -d"$(stat ${PATCHLIST} |grep Modify|cut -d' ' -f2-)" +"%Y_%m_%d")"
-	echo "${PATCHLIST}: $ARCHIVE_DATE"
-else
-	echo No patchlist.txt file, go ahead and install it
-fi
 
 function update_available() {
 	ret=0
@@ -81,6 +61,26 @@ function update_available() {
 	#fi
 	echo $ret
 }
+
+if [ "$PATCH_PAGE" = "" ]; then
+	echo Retrying just once
+	PATCH_PAGE="$(curl -s "${PATCH_PAGE_URL}"| sed -r 's/<br ?\/?>/\n/gi')"
+fi
+
+PATCH_MINI="$(get_link "Click here to download the latest patch.")"
+PARSED_DATE="$(parse_date_frompatch $PATCH_MINI)"
+
+echo "Mini:  $PATCH_MINI"
+echo "Patch date: $PARSED_DATE"
+echo "Today: $TODAY"
+
+ARCHIVE_DATE=""
+if [ -f "${PATCHLIST}" ]; then
+	ARCHIVE_DATE="$(date -d"$(stat ${PATCHLIST} |grep Modify|cut -d' ' -f2-)" +"%Y_%m_%d")"
+	echo "${PATCHLIST}: $ARCHIVE_DATE"
+else
+	echo No patchlist.txt file, go ahead and install it
+fi
 
 if [ "$(update_available $TODAY $PARSED_DATE $ARCHIVE_DATE)" = "1" ]; then
 	echo Update available

@@ -23,6 +23,10 @@ PATCH_MINI="$(./translationlink.py)"
 echo "Archive:  $PATCH_MINI"
 wget "${PATCH_MINI}" -O "${TEMP_FOLDER}/patch.zip" --quiet || exit 1
 echo $MAIN_PATH
-unzip "${TEMP_FOLDER}/patch.zip" -d "${OUTPUT_FOLDER}/data/win32/" &> /dev/null 
+if (file "${TEMP_FOLDER}/patch.zip" | grep RAR); then
+	unrar e "${TEMP_FOLDER}/patch.zip" "${OUTPUT_FOLDER}/data/win32/"
+else
+	unzip "${TEMP_FOLDER}/patch.zip" -d "${OUTPUT_FOLDER}/data/win32/" &> /dev/null
+fi
 
 ./translation.py

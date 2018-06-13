@@ -10,6 +10,7 @@
 import os
 import sys
 import threading
+import time
 
 class DownloadWorker(threading.Thread):
     def __init__(self, lst, callback):
@@ -24,11 +25,20 @@ class DownloadWorker(threading.Thread):
         self._run = True
 
     def run(self):
-        for e in self.lst:
-            if (self._run):
-                self.callback(e.url, e.abs_path, e)
-            else:
-                break
+        retry = 3
+        while (retry > 0):
+            for e in self.lst:
+                if (self._run):
+                    try:
+                        self.callback(e.url, e.abs_path, e)
+                    except Exception as ex:
+                        print("On %s: %s" % (e.url, ex))
+                        break
+                    retry = 1
+                else:
+                    break
+            time.sleep(3)
+            retry -= 1
 
     def stop(self):
         self._run = False
