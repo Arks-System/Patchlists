@@ -34,7 +34,7 @@ def get_version_url():
     for e in r.split('\n'):
         k, v = e.strip("\r").split('=')
         if (k == "PatchURL"):
-            return ("%s/gameversion.ver.pat" % (v))
+            return ("%sgameversion.ver.pat" % (v))
 
 if (__name__ == "__main__"):
     translist = []
