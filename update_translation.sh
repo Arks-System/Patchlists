@@ -21,7 +21,7 @@ mkdir -p "${TEMP_FOLDER}"
 PATCH_MINI="$(./translationlink.py)"
 
 echo "Archive:  $PATCH_MINI"
-wget "${PATCH_MINI}" -O "${TEMP_FOLDER}/patch.zip" --quiet || exit 1
+wget "${PATCH_MINI}" -O "${TEMP_FOLDER}/patch.zip" --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36' --header='Referer: https://pso2.acf.me.uk/Manual/' || exit 1
 echo $MAIN_PATH
 if (file "${TEMP_FOLDER}/patch.zip" | grep RAR); then
 	unrar e "${TEMP_FOLDER}/patch.zip" "${OUTPUT_FOLDER}/data/win32/"
